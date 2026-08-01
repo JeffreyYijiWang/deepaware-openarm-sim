@@ -1,0 +1,7 @@
+openarm-mujoco==2.0.1
+matplotlib
+pandas
+PyYAML
+pytest
+ruff
+
