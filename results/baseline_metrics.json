@@ -1,0 +1,136 @@
+{
+  "actuator_names": [
+    "left_joint1_ctrl",
+    "left_joint2_ctrl",
+    "left_joint3_ctrl",
+    "left_joint4_ctrl",
+    "left_joint5_ctrl",
+    "left_joint6_ctrl",
+    "left_joint7_ctrl"
+  ],
+  "controller_kd": [
+    5.0,
+    5.0,
+    4.0,
+    4.0,
+    1.0,
+    1.0,
+    0.8
+  ],
+  "controller_kp": [
+    40.0,
+    40.0,
+    35.0,
+    35.0,
+    8.0,
+    8.0,
+    6.0
+  ],
+  "endpoint_tolerance_rad": 0.05,
+  "experiment_completion_status": "completed",
+  "final_position_error_per_joint_rad": {
+    "openarm_left_joint1": -0.004062365067421914,
+    "openarm_left_joint2": -0.004369799751320375,
+    "openarm_left_joint3": 0.0022694115150970473,
+    "openarm_left_joint4": 0.002147761365497658,
+    "openarm_left_joint5": -0.002598110193944403,
+    "openarm_left_joint6": 0.0027288730647994225,
+    "openarm_left_joint7": 0.0005980948021876986
+  },
+  "final_tracking_error_norm_rad": 0.00774052385124537,
+  "hard_torque_limits_nm": [
+    40.0,
+    40.0,
+    27.0,
+    27.0,
+    7.0,
+    7.0,
+    7.0
+  ],
+  "joint_names": [
+    "openarm_left_joint1",
+    "openarm_left_joint2",
+    "openarm_left_joint3",
+    "openarm_left_joint4",
+    "openarm_left_joint5",
+    "openarm_left_joint6",
+    "openarm_left_joint7"
+  ],
+  "maximum_applied_torque_nm": 4.290296414148861,
+  "maximum_applied_torque_per_joint_nm": {
+    "openarm_left_joint1": 4.290296414148861,
+    "openarm_left_joint2": 1.466566590080645,
+    "openarm_left_joint3": 0.30300199852395665,
+    "openarm_left_joint4": 2.9306353410237076,
+    "openarm_left_joint5": 0.09718744122954623,
+    "openarm_left_joint6": 0.4614725139014584,
+    "openarm_left_joint7": 0.07030993471313028
+  },
+  "maximum_hold_velocity_rad_s": 0.003381521208705283,
+  "maximum_measured_velocity_per_joint_rad_s": {
+    "openarm_left_joint1": 0.06806604812209996,
+    "openarm_left_joint2": 0.05644786280098078,
+    "openarm_left_joint3": 0.05621512637900602,
+    "openarm_left_joint4": 0.07542943714766433,
+    "openarm_left_joint5": 0.05560074329764641,
+    "openarm_left_joint6": 0.044712530253638055,
+    "openarm_left_joint7": 0.05640960754266238
+  },
+  "maximum_measured_velocity_rad_s": 0.07542943714766433,
+  "maximum_position_error_per_joint_rad": {
+    "openarm_left_joint1": 0.006917586431217315,
+    "openarm_left_joint2": 0.0064613642735348795,
+    "openarm_left_joint3": 0.004300356881905651,
+    "openarm_left_joint4": 0.004926138429931781,
+    "openarm_left_joint5": 0.011224051682328873,
+    "openarm_left_joint6": 0.009998105079974673,
+    "openarm_left_joint7": 0.001991129127915831
+  },
+  "maximum_requested_torque_nm": 4.290296414148861,
+  "maximum_requested_torque_per_joint_nm": {
+    "openarm_left_joint1": 4.290296414148861,
+    "openarm_left_joint2": 1.466566590080645,
+    "openarm_left_joint3": 0.30300199852395665,
+    "openarm_left_joint4": 2.9306353410237076,
+    "openarm_left_joint5": 0.09718744122954623,
+    "openarm_left_joint6": 0.4614725139014584,
+    "openarm_left_joint7": 0.07030993471313028
+  },
+  "model_path": "C:\\Users\\Jeffr\\OneDrive\\Documents\\GitHub\\DeepAwareTakeHome\\deepaware-openarm-sim\\.venv\\share\\openarm_mujoco\\v2\\openarm_bimanual.xml",
+  "nonfinite_samples": 0,
+  "normal_torque_limits_nm": [
+    16.0,
+    16.0,
+    7.2,
+    7.2,
+    2.4000000000000004,
+    2.4000000000000004,
+    2.4000000000000004
+  ],
+  "overall_rms_position_error_rad": 0.005260518892045125,
+  "peak_to_final_error_reduction_fraction": 0.5900801467581398,
+  "peak_tracking_error_norm_rad": 0.01888301771682749,
+  "rms_position_error_per_joint_rad": {
+    "openarm_left_joint1": 0.005435585286785436,
+    "openarm_left_joint2": 0.005312038086412836,
+    "openarm_left_joint3": 0.003373041842184587,
+    "openarm_left_joint4": 0.0036444851498582073,
+    "openarm_left_joint5": 0.007733164292073736,
+    "openarm_left_joint6": 0.0070074548469060026,
+    "openarm_left_joint7": 0.001543418406405439
+  },
+  "safety_violations": 0,
+  "sample_count": 3001,
+  "torque_saturated_joint_samples": 0,
+  "torque_saturated_samples": 0,
+  "torque_saturated_samples_per_joint": {
+    "openarm_left_joint1": 0,
+    "openarm_left_joint2": 0,
+    "openarm_left_joint3": 0,
+    "openarm_left_joint4": 0,
+    "openarm_left_joint5": 0,
+    "openarm_left_joint6": 0,
+    "openarm_left_joint7": 0
+  },
+  "torque_saturated_samples_percent": 0.0
+}
