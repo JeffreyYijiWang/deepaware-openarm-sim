@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import mujoco
 import numpy as np
 import pytest
@@ -14,8 +16,38 @@ from src.model_mapping import (
     adapt_selected_actuators_to_torque,
     load_bimanual_model,
     resolve_arm_mapping,
+    validate_mapping_uniqueness,
     verify_torque_interface,
 )
+from src.safety import (
+    AbsoluteFaultLimits,
+    NormalCommandLimits,
+    PlanningLimits,
+    SafetyConfig,
+    SafetyFault,
+    SafetyMonitor,
+    TemporalSafetyConfig,
+)
+
+
+def _mapping_safety_config() -> SafetyConfig:
+    return SafetyConfig(
+        planning=PlanningLimits(
+            np.full(7, -1.0),
+            np.full(7, 1.0),
+            np.ones(7),
+            np.full(7, 0.1),
+        ),
+        normal=NormalCommandLimits(np.ones(7), np.ones(7)),
+        absolute=AbsoluteFaultLimits(
+            np.full(7, -2.0),
+            np.full(7, 2.0),
+            np.full(7, 2.0),
+            np.full(7, 2.0),
+            np.ones(7),
+        ),
+        temporal=TemporalSafetyConfig(0.002, 0.25, 3, 0.01, 0.01),
+    )
 
 
 def test_exact_named_mapping_is_unique_and_targets_expected_joints() -> None:
@@ -39,6 +71,37 @@ def test_duplicate_named_selection_is_rejected() -> None:
     duplicated = (*LEFT_JOINT_NAMES[:-1], LEFT_JOINT_NAMES[0])
     with pytest.raises(ModelMappingError, match="unique"):
         resolve_arm_mapping(model, duplicated, LEFT_ACTUATOR_NAMES)
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    (
+        ("qpos", "qpos addresses"),
+        ("dof", "DoF addresses"),
+        ("actuator", "actuator IDs"),
+    ),
+)
+def test_duplicate_resolved_address_is_rejected(field: str, message: str) -> None:
+    joint_ids = np.arange(7)
+    qpos = np.arange(7)
+    dof = np.arange(7)
+    actuators = np.arange(7)
+    selected = {"qpos": qpos, "dof": dof, "actuator": actuators}[field]
+    selected[6] = selected[0]
+    with pytest.raises(ModelMappingError, match=message):
+        validate_mapping_uniqueness(joint_ids, qpos, dof, actuators)
+
+
+def test_name_to_index_mapping_drift_causes_safety_fault() -> None:
+    model, _ = load_bimanual_model()
+    startup = resolve_arm_mapping(model)
+    drifted = replace(startup, qpos_addresses=np.roll(startup.qpos_addresses, 1))
+    monitor = SafetyMonitor(_mapping_safety_config())
+
+    with pytest.raises(SafetyFault, match="mapping_drift"):
+        monitor.verify_mapping(model, drifted, 0.0)
+    assert not monitor.active_trajectory
+    assert monitor.events[-1].reason == "mapping_drift"
 
 
 def test_selected_actuators_become_direct_positive_joint_torque() -> None:

@@ -71,8 +71,12 @@ python -m ruff check src tests
 python -m pytest -q
 python -m src.experiment --mode baseline --headless --output results/baseline
 python -m src.experiment --mode baseline --viewer --output <temporary-prefix>
+python -m src.experiment --mode compare --headless --output results
 ```
 
-Measured status: ruff passed, 23 tests passed, the baseline exited zero, and all
-four required result artifacts were created and visually inspected. The
+Measured status: ruff passed, 57 tests passed, the baseline and controlled
+latency/noise scenario exited zero, all comparison artifacts were created, and
+both requested plots were visually inspected. The shortened stochastic
+regression writes no artifacts; the stale-command injection latches `FAULT`,
+stops active control, and records its reason and timestamp. The earlier
 six-second optional viewer run also completed and exited zero.

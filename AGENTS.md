@@ -233,6 +233,53 @@ major decision.
   consistent with model damping/friction omitted from `qfrc_bias`.
 - Regression acceptance uses greater than 50% peak-to-final error-norm reduction
   (measured 59%) rather than driving gains upward to chase friction residual.
-- Ruff passes and 23 deterministic tests pass, including negative tests for all
+- Ruff passes and 57 deterministic tests pass, including negative tests for all
   implemented safety faults and a nonzero CLI exit on safety fault.
 - Both the headless baseline and a bounded six-second `--viewer` run exit zero.
+
+## Safety subsystem increment (2026-08-01)
+
+- Keep planning limits, normal command limits, and absolute fault limits in
+  separate immutable configuration types. Planning limits govern desired
+  trajectory position, velocity, and continuity; normal limits govern torque
+  clipping and slew; absolute limits trip faults for unsafe command/state.
+- Safety evaluation is stateful. Simulation, command, and feedback timestamps
+  must advance monotonically at the configured timestep; missing, future, or
+  stale command/feedback timestamps trip the watchdog.
+- Tracking divergence requires 25 consecutive violating samples (0.05 s at
+  500 Hz). One transient sample must not fault, while a controller-sign error
+  must fault through persistent divergence.
+- Normal torque saturation and torque-rate limiting are non-faulting but must be
+  logged separately. Non-finite or mismatched applied actuator force is a fault.
+- The startup name-to-index fingerprint must be reproducible. A changed joint
+  ID, qpos address, DoF address, or actuator ID is a `mapping_drift` fault.
+- FAULT is latched, marks the active trajectory stopped, records reason and
+  simulation timestamp, writes zero torque to the seven selected simulated
+  actuators, emits a fault JSON record, and returns a nonzero CLI status.
+- Zero simulated torque is not hardware safe-torque-off. This code is not a
+  certified safety system; hardware requires an independent physical E-stop and
+  power-isolation path.
+
+## Controlled perturbation outcome (2026-08-01)
+
+- Preserve baseline as an explicit mode with zero latency, zero sensor noise,
+  and no random sampling. Its measured tracking outputs remain unchanged.
+- The `latency_noise` mode uses a four-sample FIFO derived from
+  `0.008 s / 0.002 s`; it delays the constrained actuator torque command by a
+  verified 8 ms. It does not delay desired trajectory samples.
+- Position and velocity measurements receive fixed-seed Gaussian noise with
+  configured `ASSUMED` standard deviations of `0.001 rad` and `0.01 rad/s`.
+  Measurements are noisy but not delayed. True MuJoCo state remains separately
+  logged for tracking metrics.
+- Full perturbed results measured RMS error `0.00522003 rad`, maximum error
+  `0.0112935 rad`, maximum final absolute error `0.00377929 rad`, and maximum
+  velocity `0.0804136 rad/s`, with zero safety faults and no significant hold
+  error crossings.
+- Aggregate command intervention increased from 0% to 1.83272%. All 55 samples
+  were torque-rate limiting; normal torque clipping remained zero.
+- The controlled scenario remained stable and did not materially increase
+  tracking error, introduce oscillation, or introduce material overshoot under
+  the classified assessment thresholds.
+- Real encoder noise, velocity noise, and communication/actuation latency remain
+  unmeasured. This scenario is a robustness test, not an OpenArm hardware-noise
+  model.

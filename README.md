@@ -20,6 +20,13 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m src.experiment --mode baseline --headless --output results/baseline
 ```
 
+Run both the exact baseline and the controlled 8 ms actuator-latency plus
+sensor-noise scenario, then generate comparison outputs:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.experiment --mode compare --headless --output results
+```
+
 Viewed execution uses the same experiment model and controller:
 
 ```powershell
@@ -43,10 +50,12 @@ Run deterministic regression tests and lint with:
   in memory to fixed gain-one, zero-bias torque actuators after verifying joint
   transmission, target, gear, command magnitude, and sign. Vendor files remain
   unchanged.
-- Every step is preceded by finite-value, desired planning-limit, measured hard
-  position, measured velocity, hard requested-torque, tracking-divergence, and
-  normal torque-clamping checks. A safety fault stops stepping and exits
-  nonzero.
+- Every step is preceded by shape, finite-value, monotonic-time, watchdog,
+  planning position/velocity/continuity, hard state, absolute torque, applied
+  torque, and persistent tracking checks. Normal torque clipping and torque-rate
+  limiting are separately logged. A fault stops the active trajectory, records
+  its reason and timestamp, applies zero simulated actuator torque, and exits
+  nonzero. See [`docs/SAFETY.md`](docs/SAFETY.md).
 
 ## Measured baseline
 
@@ -78,6 +87,41 @@ Outputs:
 - [`results/baseline_tracking.png`](results/baseline_tracking.png)
 - [`results/baseline_torque.png`](results/baseline_torque.png)
 
+## Controlled robustness scenario
+
+The perturbation delays constrained **actuator torque commands** by four 2 ms
+steps. Position and velocity measurements receive fixed-seed Gaussian noise but
+no measurement delay; the desired trajectory is not delayed. These assumed
+values do not reproduce a measured OpenArm. Exact semantics, physical
+measurement procedures, and regression-threshold reasoning are in
+[`docs/SIM_TO_REAL_PERTURBATION.md`](docs/SIM_TO_REAL_PERTURBATION.md).
+
+| Metric | Baseline | 8 ms + noise |
+| --- | ---: | ---: |
+| Overall RMS position error | `0.00526052 rad` | `0.00522003 rad` |
+| Maximum position error | `0.0112241 rad` | `0.0112935 rad` |
+| Maximum final absolute error | `0.00436980 rad` | `0.00377929 rad` |
+| Aggregate saturation samples | `0%` | `1.83272%` |
+| Normal torque clipping | `0%` | `0%` |
+| Torque-rate limiting | `0%` | `1.83272%` |
+| Maximum velocity | `0.0754294 rad/s` | `0.0804136 rad/s` |
+| Safety faults | `0` | `0` |
+| Significant hold-error crossings | `0` | `0` |
+| Maximum overshoot | `0 rad` | `0.0000702 rad` |
+
+Measured output classifies the run as stable: no material tracking-error
+increase, no oscillation, no material overshoot, and no safety-limit trigger.
+The greater aggregate saturation is a logged command intervention and is split
+into normal torque clipping versus torque-rate limiting in the metrics.
+
+Scenario outputs:
+
+- [`results/latency_noise.csv`](results/latency_noise.csv)
+- [`results/latency_noise_metrics.json`](results/latency_noise_metrics.json)
+- [`results/latency_noise_tracking.png`](results/latency_noise_tracking.png)
+- [`results/comparison_metrics.json`](results/comparison_metrics.json)
+- [`results/baseline_vs_latency.png`](results/baseline_vs_latency.png)
+
 ## Limitations
 
 MuJoCo `qfrc_bias` compensates gravity, Coriolis, and centrifugal terms, but not
@@ -86,8 +130,8 @@ therefore expected and was documented rather than suppressed with aggressive
 gains. Integral action or explicit friction feedforward would be the appropriate
 later remedy. Model inertials/passive terms are estimates, J7 has a documented
 DM3507/DM4310 source conflict, and this simulation is not authorization for
-hardware motion.
+hardware motion. These checks are not a certified hardware safety system; a
+physical arm requires an independent E-stop and power-isolation path.
 
 See [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md) for the evidence-first agent
 workflow and [`AGENTS.md`](AGENTS.md) for the governing engineering rules.
-

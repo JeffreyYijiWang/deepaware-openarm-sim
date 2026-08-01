@@ -44,6 +44,14 @@ class ArmMapping:
     dof_addresses: np.ndarray
     actuator_ids: np.ndarray
 
+    def __post_init__(self) -> None:
+        validate_mapping_uniqueness(
+            self.joint_ids,
+            self.qpos_addresses,
+            self.dof_addresses,
+            self.actuator_ids,
+        )
+
     @property
     def joint_names(self) -> tuple[str, ...]:
         return tuple(channel.joint_name for channel in self.channels)
@@ -92,6 +100,26 @@ def _scalar_address(values: np.ndarray, label: str) -> int:
     if flat.size != 1:
         raise ModelMappingError(f"{label} is not a one-DoF scalar address: {flat}")
     return int(flat[0])
+
+
+def validate_mapping_uniqueness(
+    joint_ids: np.ndarray,
+    qpos_addresses: np.ndarray,
+    dof_addresses: np.ndarray,
+    actuator_ids: np.ndarray,
+) -> None:
+    """Reject malformed seven-channel mappings, including duplicate addresses."""
+    for label, raw_values in (
+        ("joint IDs", joint_ids),
+        ("qpos addresses", qpos_addresses),
+        ("DoF addresses", dof_addresses),
+        ("actuator IDs", actuator_ids),
+    ):
+        values = np.asarray(raw_values, dtype=int)
+        if values.shape != (7,):
+            raise ModelMappingError(f"Selected {label} must have shape (7,): {values}")
+        if np.unique(values).size != 7:
+            raise ModelMappingError(f"Selected {label} are not unique: {values}")
 
 
 def resolve_arm_mapping(
@@ -149,15 +177,6 @@ def resolve_arm_mapping(
     )
     dof_addresses = np.asarray([channel.dof_address for channel in channels], dtype=int)
     actuator_ids = np.asarray([channel.actuator_id for channel in channels], dtype=int)
-    for label, values in (
-        ("joint IDs", joint_ids),
-        ("qpos addresses", qpos_addresses),
-        ("DoF addresses", dof_addresses),
-        ("actuator IDs", actuator_ids),
-    ):
-        if np.unique(values).size != 7:
-            raise ModelMappingError(f"Selected {label} are not unique: {values}")
-
     return ArmMapping(
         channels=tuple(channels),
         joint_ids=joint_ids,
@@ -165,6 +184,22 @@ def resolve_arm_mapping(
         dof_addresses=dof_addresses,
         actuator_ids=actuator_ids,
     )
+
+
+def verify_mapping_unchanged(model: mujoco.MjModel, startup: ArmMapping) -> None:
+    """Re-resolve named channels and reject any index/transmission drift."""
+    current = resolve_arm_mapping(model, startup.joint_names, startup.actuator_names)
+    comparisons = (
+        ("joint ID", startup.joint_ids, current.joint_ids),
+        ("qpos address", startup.qpos_addresses, current.qpos_addresses),
+        ("DoF address", startup.dof_addresses, current.dof_addresses),
+        ("actuator ID", startup.actuator_ids, current.actuator_ids),
+    )
+    for label, expected, actual in comparisons:
+        if not np.array_equal(expected, actual):
+            raise ModelMappingError(
+                f"Named {label} mapping changed: startup={expected}, current={actual}"
+            )
 
 
 def adapt_selected_actuators_to_torque(
