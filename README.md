@@ -29,9 +29,15 @@ ROS, IK, manipulation, grippers, and the right arm remain out of scope.
 
 ## 4. Demo
 
-[Download the generated 1280x720 H.264 demo](results/demo.mp4), or inspect the
-[baseline-versus-latency plot](results/baseline_vs_latency.png). A hosted-video
-URL can replace this local link after the repository is published.
+## 4. Demo
+
+<video src="https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4" controls width="720"></video>
+
+Or inspect the [baseline-versus-latency plot](results/baseline_vs_latency.png).
+
+The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
+model), expands it in memory, and passes an explicit `1280x720` size to
+`mujoco.Renderer`; it does not edit the vendor model.
 
 The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
 model), expands it in memory, and passes an explicit `1280x720` size to
