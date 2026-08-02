@@ -336,6 +336,10 @@ the pinned CAN adapter and make the proposed `vcan`/MuJoCo gate executable.
 
 ## 20. Extended left-arm motion showcase
 
+
+https://github.com/user-attachments/assets/6d030706-8a7a-4c21-8d28-5c724eaf1232
+
+
 [Download the additional left-arm/claw video](results/left_arm_showcase.mp4).
 It raises the left arm to a forward-kinematics-verified horizontal reach, bends
 and rotates the arm and wrist, closes and opens the coupled claw through its
