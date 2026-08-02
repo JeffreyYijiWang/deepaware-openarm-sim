@@ -28,7 +28,7 @@ tests one controlled robustness question without implying hardware fidelity.
 ROS, IK, manipulation, grippers, and the right arm remain out of scope.
 
 ## 4. Demo
-<video src="https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4" controls width="720"></video>
+<video src="[https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4](https://github.com/JeffreyYijiWang/deepaware-openarm-sim/raw/refs/heads/main/results/demo.mp4)" controls width="720"></video>
 [Download the generated 1280x720 H.264 demo](results/demo.mp4), or inspect the
 [baseline-versus-latency plot](results/baseline_vs_latency.png). A hosted-video
 URL can replace this local link after the repository is published.
@@ -36,6 +36,16 @@ URL can replace this local link after the repository is published.
 The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
 model), expands it in memory, and passes an explicit `1280x720` size to
 `mujoco.Renderer`; it does not edit the vendor model.
+
+AI-agent workflow summary
+
+OpenAI Codex was used as the primary implementation agent with evidence-first
+increments: inspect sources, encode provenance, implement one bounded subsystem,
+run tests/experiments, inspect artifacts, and revise claims. No secondary agent
+was used. The review caught both a trajectory-test setup error and an offscreen
+render-buffer assumption before submission. Representative prompts, commands,
+manual review boundaries, and remaining uncertainty are recorded in
+[`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
 
 ## 5. Architecture
 
@@ -272,12 +282,3 @@ and encoder noise; identify friction, effective inertia, backlash, mass/CoM,
 and safe software margins; then tune a low-torque hold. In parallel, implement
 the pinned CAN adapter and make the proposed `vcan`/MuJoCo gate executable.
 
-## 20. AI-agent workflow summary
-
-OpenAI Codex was used as the primary implementation agent with evidence-first
-increments: inspect sources, encode provenance, implement one bounded subsystem,
-run tests/experiments, inspect artifacts, and revise claims. No secondary agent
-was used. The review caught both a trajectory-test setup error and an offscreen
-render-buffer assumption before submission. Representative prompts, commands,
-manual review boundaries, and remaining uncertainty are recorded in
-[`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
