@@ -6,7 +6,7 @@ This repository provides a deterministic, headless-first MuJoCo simulation of
 the OpenArm v2 left seven-DoF arm. A named joint/actuator mapping drives an
 in-memory torque interface with joint-space PD and MuJoCo bias-force
 compensation, explicit safety supervision, measured baseline and controlled
-8 ms latency/noise experiments, 57 deterministic tests, and a proposed (not
+8 ms latency/noise experiments, 63 deterministic tests, and a proposed (not
 hardware-verified) SocketCAN bridge. The baseline completed 3,001 samples with
 `0.00526052 rad` overall RMS error, zero command saturation, zero safety faults,
 and no non-finite samples.
@@ -32,7 +32,6 @@ ROS, IK, manipulation, grippers, and the right arm remain out of scope.
 
 https://github.com/user-attachments/assets/fadfa0df-fbe2-4a02-965e-4b3839097aac
 
-<video src="[https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4](https://github.com/JeffreyYijiWang/deepaware-openarm-sim/raw/refs/heads/main/results/demo.mp4)" controls width="720"></video>
 [Download the generated 1280x720 H.264 demo](results/demo.mp4), or inspect the
 [baseline-versus-latency plot](results/baseline_vs_latency.png). 
 
@@ -40,13 +39,23 @@ The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
 model), expands it in memory, and passes an explicit `1280x720` size to
 `mujoco.Renderer`; it does not edit the vendor model.
 
-# AI-agent workflow summary
+### Deliverables
+
+- [GitHub repository](https://github.com/JeffreyYijiWang/deepaware-openarm-sim)
+  with this README and reproducible source/tests.
+- Short demo video: [`results/demo.mp4`](results/demo.mp4).
+- Short write-up in this README covering priorities and rationale (sections
+  2-3), AI workflow and review (below), results (sections 13-15), and next work
+  (section 19).
+- Skeptical final audit: [`docs/FINAL_REVIEW.md`](docs/FINAL_REVIEW.md).
+
+## AI-agent workflow and review
 
 OpenAI Codex was used as the primary implementation agent with evidence-first
 increments: inspect sources, encode provenance, implement one bounded subsystem,
 run tests/experiments, inspect artifacts, and revise claims. No secondary agent
-was used. Three verbatim prompt excerpts and the complete verification ledger
-are in the workflow document. Two concrete examples of the review loop were:
+was used. Reported prompt excerpts and the verification ledger are in the
+workflow document. Two concrete examples of the review loop were:
 
 - `pytest` raised `desired_discontinuity` inside the supposed single-transient
   test, revealing that its desired-state stimulus accidentally violated a
@@ -58,6 +67,35 @@ are in the workflow document. Two concrete examples of the review loop were:
 The named tests and commands, what was inspected manually, what was explicitly
 not trusted, detection symptoms, corrections, and remaining uncertainty are in
 [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
+
+## 21. Extended left-arm motion showcase
+
+[Download the additional left-arm/claw video](results/left_arm_showcase.mp4).
+It raises the left arm to a forward-kinematics-verified horizontal reach, bends
+and rotates the arm and wrist, closes and opens the coupled claw through its
+full official MJCF range, then returns to the horizontal pose. Generate it with:
+
+```powershell
+.\.review-venv\Scripts\python.exe -m src.record_showcase --output results/left_arm_showcase.mp4 --width 1280 --height 720 --fps 30
+```
+
+This is deliberately a **scripted kinematic visualization**, isolated from the
+validated seven-joint controller experiment. It uses named model lookups and
+checks the arm planning margin, finger coupling/ranges, and horizontal geometry,
+but it is not presented as a dynamics, collision-safety, controller-tracking,
+or hardware test. The generated evidence is in
+[`results/left_arm_showcase_metrics.json`](results/left_arm_showcase_metrics.json),
+and model-level regression checks are in `tests/test_showcase.py`.
+
+AI validation was also used adversarially: a fresh environment reproduced the
+artifacts, source and compiled MuJoCo metadata were cross-checked, and temporary
+torque-limit, controller-sign, and duplicate-actuator mutations were each
+required to make a relevant test fail before being restored. The AI audit is
+evidence, not author approval. Human sign-off should inspect the final diff,
+rerun the commands below, compare README numbers with generated JSON/CSV,
+review the plots/video, follow the cited official sources, and confirm every
+`unverified` item in the final review remains labeled. The repository cannot
+prove that human sign-off occurred; the author must perform and record it.
 
 
 ## 5. Architecture
@@ -91,6 +129,13 @@ py -3.11 -m venv .review-venv
 
 Linux/macOS users can create a Python 3.11 venv and substitute its `python`
 executable. Headless execution is the primary path.
+
+On Windows hosts where pip reports a certificate-chain error, retry without
+disabling TLS verification by using the operating-system trust store:
+
+```powershell
+.\.review-venv\Scripts\python.exe -m pip install --use-feature=truststore -r requirements.txt
+```
 
 ## 7. Reproduction commands
 
@@ -131,6 +176,8 @@ The vendor actuators are position servos, so raw `data.ctrl` is not joint
 torque. After validating each joint transmission, target, scalar gear, and sign,
 the loaded compiled model converts only the selected actuators in memory to
 gain-one, zero-bias torque actuation. The official XML remains unchanged. Full
+startup validation also requires the configured absolute torque limits to
+match both the compiled actuator and joint actuator-force clamps. Full
 commit-pinned evidence is in
 [`docs/PARAMETER_PROVENANCE.md`](docs/PARAMETER_PROVENANCE.md).
 
@@ -244,10 +291,12 @@ triggered no safety limits, and remained stable. Machine-readable comparison:
 
 ## 15. Regression tests
 
-`57 passed` in the final Python 3.11 run. The suite includes valid/negative
+`63 passed` in the final Python 3.11 run. The suite includes valid/negative
 mapping, trajectory, every implemented safety rule, deterministic shortened
-tracking with broad engineering thresholds, watchdog fault injection, fault
-shutdown, and nonzero fault CLI exit. Threshold reasoning is documented in
+tracking with broad engineering thresholds, explicit non-equal joint/qpos/DoF
+addressing, torque-clamp correspondence, controller sign/bias semantics, final
+hold-sample indexing, watchdog fault injection, fault shutdown, and nonzero
+fault CLI exit. Threshold reasoning is documented in
 [`docs/SIM_TO_REAL_PERTURBATION.md`](docs/SIM_TO_REAL_PERTURBATION.md).
 
 ```powershell
@@ -277,6 +326,7 @@ motor current loops, thermal response, mechanics, or a physical E-stop.
 ## 18. Known limitations
 
 - No physical OpenArm or CAN interface was present; latency/noise and the bridge
+- No large/full range rotations and extension of robot arms based on scope.
   remain controlled assumptions/design work.
 - MuJoCo `qfrc_bias` excludes damping and `frictionloss`, leaving a documented
   steady-state residual.
@@ -284,6 +334,10 @@ motor current loops, thermal response, mechanics, or a physical E-stop.
   validation; J7 has a DM3507-versus-DM4310 source conflict.
 - The official bimanual asset is loaded even though only the left arm is
   controlled; right-arm state remains untouched.
+- The latency/noise result is one fixed-seed synthetic scenario. Its `stable`
+  classification is threshold-based and is not a general stability proof.
+- Watchdog negative tests exercise the simulation monitor; no asynchronous CAN
+  timing, Linux scheduling, or physical motor watchdog was demonstrated.
 - No collision-validity claim, certified risk assessment, or hardware-ready
   gain/safe-state claim is made.
 

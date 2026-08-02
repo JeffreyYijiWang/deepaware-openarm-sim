@@ -233,7 +233,7 @@ major decision.
   consistent with model damping/friction omitted from `qfrc_bias`.
 - Regression acceptance uses greater than 50% peak-to-final error-norm reduction
   (measured 59%) rather than driving gains upward to chase friction residual.
-- Ruff passes and 57 deterministic tests pass, including negative tests for all
+- Ruff passes and 63 deterministic tests pass, including negative tests for all
   implemented safety faults and a nonzero CLI exit on safety fault.
 - Both the headless baseline and a bounded six-second `--viewer` run exit zero.
 
@@ -314,7 +314,7 @@ major decision.
 
 ## Submission packaging outcome (2026-08-01)
 
-- Reviewer setup, headless baseline, comparison, Ruff, all 57 tests, and the
+- Reviewer setup, headless baseline, comparison, Ruff, all 63 tests, and the
   optional six-second viewer path were rerun in a fresh `.review-venv` using
   Python 3.11 and the pinned top-level dependencies.
 - `src/record_demo.py` reports the selected model's original `640x480`

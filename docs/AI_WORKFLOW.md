@@ -31,8 +31,9 @@ from controller code. Claims were added only after commands produced evidence.
 
 ## Representative prompts
 
-These are excerpts from the actual task prompts, not reconstructed success
-stories.
+These are reported excerpts from development task prompts. The repository does
+not contain an immutable conversation export, so this audit cannot authenticate
+their exact wording or prove that they are complete.
 
 **Prompt 1 — evidence first**
 
@@ -56,8 +57,11 @@ mapping drift checks, fault logging, and deterministic positive/negative tests.
 > Do not weaken a test merely to make it pass. Fix implementation errors or
 > document a genuine model limitation.
 
-This instruction was applied directly when tests or rendering checks failed;
-thresholds were tied to engineering meaning rather than exact output snapshots.
+This instruction was applied directly when tests or rendering checks failed.
+Most regression thresholds are broad engineering policies rather than exact
+output snapshots. The baseline's greater-than-50% peak-to-final reduction
+threshold was selected after observing 59% and is therefore treated as weak,
+partly circular evidence rather than an independent acceptance argument.
 
 ## Commands actually run
 
@@ -83,11 +87,12 @@ that environment issue.
 
 ## Verification used
 
-- 57 deterministic pytest cases covering named mapping, duplicate address/ID
+- 63 deterministic pytest cases covering named mapping, duplicate address/ID
   rejection, trajectory endpoints, limit validation, clipping, torque slew,
   finite values, hard limits, persistent divergence, watchdogs, fault latching,
-  mapping drift, baseline tracking, four-sample latency semantics, and the
-  shortened fixed-seed perturbation regression.
+  mapping drift, non-equal joint/qpos/DoF indexing, actuator/joint force clamps,
+  controller signs, final hold indexing, baseline tracking, four-sample latency
+  semantics, and the shortened fixed-seed perturbation regression.
 - Ruff on all Python source and tests.
 - Two full 3,001-sample headless experiments and JSON/CSV artifact checks.
 - C++17 `-Wall -Wextra -Wpedantic -fsyntax-only` for the portable CAN skeleton;
@@ -103,7 +108,7 @@ that environment issue.
 | --- | --- | --- |
 | Seven-joint mapping is correct | `tests/test_model_mapping.py` resolves every named joint, qpos address, DoF address, actuator ID, transmission target, uniqueness constraint, and startup fingerprint against compiled MuJoCo metadata. | Read the resolved names and transmission checks; did not infer indices from XML order. |
 | Bias compensation is wired to the correct coordinates | `tests/test_controller.py::test_pd_feedback_signs_and_bias_is_added_exactly_once` checks sign and one-time addition; `ArmMapping.read_bias` indexes `qfrc_bias` with the separately resolved DoF addresses; full tracking then runs with finite logged `tau_bias`. | Inspected the `jnt_dofadr`-based lookup and logged bias columns. A low tracking error alone was not treated as proof of correct bias indexing. |
-| Safety rules reject unsafe inputs | Negative cases in `tests/test_safety.py`, including discontinuity, NaN/Inf, hard limits, absolute torque, divergence, stale command/feedback, and mapping drift. | Checked that each test asserted the specific fault reason rather than accepting any exception. |
+| Safety rules reject unsafe inputs | Negative cases in `tests/test_safety.py` cover discontinuity, NaN/Inf, hard limits, absolute torque, divergence, and stale command/feedback; `tests/test_model_mapping.py` covers mapping drift. | Checked that each test asserted the specific fault reason rather than accepting any exception. |
 | Latency delays commands, not desired positions | Tracking regression asserts a four-sample queue from `0.008/0.002` and reported `implemented_actuation_latency_ms == 8.0`; generated CSV/JSON were inspected. | Read the queue placement between safety limiting and actuator write. |
 | Results are real outputs | The `compare` command regenerated both 3,001-row CSVs, metric JSON, and plots; README values were cross-checked against those JSON fields. | Inspected tracking/torque/comparison plots for clipping, illegible axes, and qualitative oscillation. |
 | Demo is genuinely HD | The check-only command printed original buffer `640x480`, adjusted buffer and renderer `1280x720`; `ffprobe` reported H.264, `1280x720`, 30 fps, 14.03 s. | Inspected initial-pose, motion, hold/plot, and hardware-slide frames rather than trusting encoder success. |
@@ -162,15 +167,48 @@ The following were not trusted automatically:
    conversion on only the seven selected actuators rather than writing torque
    into a position-reference channel.
 
-## Manual review
+4. The final adversarial audit found that configured absolute torque was not
+   explicitly compared with both compiled MuJoCo force-clamp layers. Startup
+   now rejects a mismatch or disabled actuator/joint actuator-force clamp, with
+   negative tests. A synthetic free-joint fixture also proves state reads use
+   qpos and DoF addresses when those differ from joint IDs.
 
-Manually reviewed: source links and conflicts; model/joint/actuator selection;
-the actuator conversion and torque sign tests; safety fault semantics; all
-generated metric JSON; plot readability; five representative demo frames; the
-hardware design's fail-closed boundary; and final README links/claims.
+## Adversarial AI validation
 
-Not manually or automatically validated: a real arm, CAN electrical layer,
-wire frames against hardware, motor identities/zeros/signs, current-loop
+The final review used a separate clean `.audit-venv`, independently generated
+baseline/comparison artifacts outside the repository results directory, and
+three temporary mutations. Each mutation was restored immediately:
+
+- reducing only J7 absolute torque to `2.0 N m` made the baseline regression
+  fail because normal torque (`2.4 N m`) exceeded the absolute limit;
+- reversing the proportional error sign made the end-to-end baseline fault at
+  `t=1.578 s` on measured velocity; this proves fault detection, not that the
+  divergence rule is always the first detector;
+- duplicating `left_joint1_ctrl` in the seven-actuator selection made mapping
+  startup fail on the uniqueness rule.
+
+The review also checked the official motor page against configured rated/peak
+torque and rpm-derived rad/s values, inspected the installed official v2 MJCF,
+checked generated JSON/CSV and plots, decoded representative demo frames, and
+compiled the C++ skeleton in syntax-only mode. Full commands and unresolved
+items are in [`FINAL_REVIEW.md`](FINAL_REVIEW.md).
+
+## Human review procedure
+
+Before submission, the author should personally inspect `git diff`, rerun the
+clean installation/tests/experiments, compare README values against generated
+JSON/CSV, review plots and the complete demo, open the cited official sources,
+and confirm that hardware, timing, collision, and safety limitations remain
+explicit. Human sign-off must not be inferred from an AI test report; this
+repository does not independently prove that the author completed that step.
+
+The final AI reviewer independently inspected source links and conflicts;
+model/joint/actuator selection; actuator conversion and sign tests; safety fault
+semantics; generated metrics; plot readability; six representative demo frames;
+the hardware design boundary; and final README claims.
+
+Still unvalidated by this project: a real arm, CAN electrical layer, wire
+frames against hardware, motor identities/zeros/signs, current-loop
 dynamics, temperature thresholds, physical E-stop/power isolation, stopping
 distance, collision fidelity, inertial accuracy, backlash, or compliance.
 
