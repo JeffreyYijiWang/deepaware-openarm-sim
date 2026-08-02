@@ -277,7 +277,16 @@ the pinned CAN adapter and make the proposed `vcan`/MuJoCo gate executable.
 OpenAI Codex was used as the primary implementation agent with evidence-first
 increments: inspect sources, encode provenance, implement one bounded subsystem,
 run tests/experiments, inspect artifacts, and revise claims. No secondary agent
-was used. The review caught both a trajectory-test setup error and an offscreen
-render-buffer assumption before submission. Representative prompts, commands,
-manual review boundaries, and remaining uncertainty are recorded in
+was used. Three verbatim prompt excerpts and the complete verification ledger
+are in the workflow document. Two concrete examples of the review loop were:
+
+- `pytest` raised `desired_discontinuity` inside the supposed single-transient
+  test, revealing that its desired-state stimulus accidentally violated a
+  different rule; the stimulus was corrected while the rule stayed intact.
+- the 1280x720 render check failed with `Image width 1280 > framebuffer width
+  640`; inspecting `model.vis.global_` exposed the buffer mismatch, and the
+  corrected run plus `ffprobe` and decoded frames verified the final output.
+
+The named tests and commands, what was inspected manually, what was explicitly
+not trusted, detection symptoms, corrections, and remaining uncertainty are in
 [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).

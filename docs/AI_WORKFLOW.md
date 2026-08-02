@@ -97,6 +97,18 @@ that environment issue.
 - `ffprobe` verification of demo codec, resolution, frame rate, duration, and
   size.
 
+### Verification ledger
+
+| Claim or risk | Evidence used before accepting it | Human review boundary |
+| --- | --- | --- |
+| Seven-joint mapping is correct | `tests/test_model_mapping.py` resolves every named joint, qpos address, DoF address, actuator ID, transmission target, uniqueness constraint, and startup fingerprint against compiled MuJoCo metadata. | Read the resolved names and transmission checks; did not infer indices from XML order. |
+| Bias compensation is wired to the correct coordinates | `tests/test_controller.py::test_pd_feedback_signs_and_bias_is_added_exactly_once` checks sign and one-time addition; `ArmMapping.read_bias` indexes `qfrc_bias` with the separately resolved DoF addresses; full tracking then runs with finite logged `tau_bias`. | Inspected the `jnt_dofadr`-based lookup and logged bias columns. A low tracking error alone was not treated as proof of correct bias indexing. |
+| Safety rules reject unsafe inputs | Negative cases in `tests/test_safety.py`, including discontinuity, NaN/Inf, hard limits, absolute torque, divergence, stale command/feedback, and mapping drift. | Checked that each test asserted the specific fault reason rather than accepting any exception. |
+| Latency delays commands, not desired positions | Tracking regression asserts a four-sample queue from `0.008/0.002` and reported `implemented_actuation_latency_ms == 8.0`; generated CSV/JSON were inspected. | Read the queue placement between safety limiting and actuator write. |
+| Results are real outputs | The `compare` command regenerated both 3,001-row CSVs, metric JSON, and plots; README values were cross-checked against those JSON fields. | Inspected tracking/torque/comparison plots for clipping, illegible axes, and qualitative oscillation. |
+| Demo is genuinely HD | The check-only command printed original buffer `640x480`, adjusted buffer and renderer `1280x720`; `ffprobe` reported H.264, `1280x720`, 30 fps, 14.03 s. | Inspected initial-pose, motion, hold/plot, and hardware-slide frames rather than trusting encoder success. |
+| CAN artifact compiles | `g++ -std=c++17 -Wall -Wextra -Wpedantic -fsyntax-only hardware/can_control_loop.cpp` exited zero. | Treated syntax as syntax only; no protocol or hardware behavior was inferred. |
+
 ## Source validation and what was not trusted
 
 The agent followed the official repository index to commit-pinned
@@ -114,20 +126,35 @@ The following were not trusted automatically:
 - simulation success as hardware safety evidence;
 - C++ protocol placeholders as a hardware driver;
 - README metrics not traceable to generated JSON/CSV.
+- a visually plausible trajectory as proof that `qfrc_bias` used the correct
+  seven DoF addresses; named lookup, controller unit tests, and logged bias
+  signals were required;
+- a passing renderer constructor as proof of output resolution; reported model
+  buffer dimensions, `renderer.width/height`, `ffprobe`, and decoded frames were
+  checked separately.
 
 ## Real mistakes and corrections
 
-1. A first “single tracking transient” negative test changed desired position by
-   `0.6 rad` between adjacent samples. The independent discontinuity rule
-   correctly faulted, producing one failed test. The stimulus—not the safety
-   threshold—was corrected to a transient measured-state error, after which the
-   full suite passed.
-2. The demo script initially passed `1280x720` to `mujoco.Renderer`, but the
-   selected model's compiled offscreen buffer remained `640x480`; the render
-   check failed with “image width 1280 > framebuffer width 640.” The script now
-   reports the original buffer, raises `model.vis.global_.offwidth/offheight`
-   in memory to `1280x720`, constructs the explicit-size renderer, and verifies
-   the actual resolution. Vendor XML remains unchanged.
+1. A first `test_single_tracking_transient_does_not_fault` stimulus changed
+   desired position by `0.6 rad` between adjacent samples. The full pytest run
+   did not merely report a generic failure: the test raised the independently
+   correct `SafetyFault` reason `desired_discontinuity` when it expected no
+   fault. Reading the traceback and the two adjacent desired samples showed
+   that the test setup violated a different safety rule. The stimulus—not the
+   discontinuity threshold—was corrected to a one-sample measured-state error;
+   the dedicated discontinuity negative test remained unchanged, and the full
+   suite then passed.
+2. The first
+   `python -m src.record_demo --check-only --width 1280 --height 720` run failed
+   before video encoding with `Image width 1280 > framebuffer width 640`.
+   Inspecting `model.vis.global_.offwidth/offheight` returned `640x480`, proving
+   that an explicit renderer size alone did not enlarge the OpenGL buffer. The
+   script now reports the original buffer, raises those two compiled-model
+   fields in memory to `1280x720`, constructs the explicit-size renderer, and
+   verifies `renderer.width/height`. The rerun printed
+   `ADJUSTED_OFFSCREEN_BUFFER=1280x720`, `RENDERER_RESOLUTION=1280x720`, and
+   `RENDER_CHECK=passed`; `ffprobe` and decoded-frame inspection provided
+   independent output checks. Vendor XML remains unchanged.
 3. The official MJCF actuator interface was an important uncertainty: the
    selected upstream actuators were `<position>` actuators, not direct-torque
    commands. Named compiled-model inspection and force/sign probes detected
