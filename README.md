@@ -34,8 +34,7 @@ https://github.com/user-attachments/assets/fadfa0df-fbe2-4a02-965e-4b3839097aac
 
 <video src="[https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4](https://github.com/JeffreyYijiWang/deepaware-openarm-sim/raw/refs/heads/main/results/demo.mp4)" controls width="720"></video>
 [Download the generated 1280x720 H.264 demo](results/demo.mp4), or inspect the
-[baseline-versus-latency plot](results/baseline_vs_latency.png). A hosted-video
-URL can replace this local link after the repository is published.
+[baseline-versus-latency plot](results/baseline_vs_latency.png). 
 
 The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
 model), expands it in memory, and passes an explicit `1280x720` size to
