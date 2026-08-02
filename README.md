@@ -28,14 +28,37 @@ tests one controlled robustness question without implying hardware fidelity.
 ROS, IK, manipulation, grippers, and the right arm remain out of scope.
 
 ## 4. Demo
-<video src="https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4" controls width="720"></video>
+
+
+https://github.com/user-attachments/assets/fadfa0df-fbe2-4a02-965e-4b3839097aac
+
+<video src="[https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4](https://github.com/JeffreyYijiWang/deepaware-openarm-sim/raw/refs/heads/main/results/demo.mp4)" controls width="720"></video>
 [Download the generated 1280x720 H.264 demo](results/demo.mp4), or inspect the
-[baseline-versus-latency plot](results/baseline_vs_latency.png). A hosted-video
-URL can replace this local link after the repository is published.
+[baseline-versus-latency plot](results/baseline_vs_latency.png). 
 
 The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
 model), expands it in memory, and passes an explicit `1280x720` size to
 `mujoco.Renderer`; it does not edit the vendor model.
+
+ AI-agent workflow summary
+
+OpenAI Codex was used as the primary implementation agent with evidence-first
+increments: inspect sources, encode provenance, implement one bounded subsystem,
+run tests/experiments, inspect artifacts, and revise claims. No secondary agent
+was used. Three verbatim prompt excerpts and the complete verification ledger
+are in the workflow document. Two concrete examples of the review loop were:
+
+- `pytest` raised `desired_discontinuity` inside the supposed single-transient
+  test, revealing that its desired-state stimulus accidentally violated a
+  different rule; the stimulus was corrected while the rule stayed intact.
+- the 1280x720 render check failed with `Image width 1280 > framebuffer width
+  640`; inspecting `model.vis.global_` exposed the buffer mismatch, and the
+  corrected run plus `ffprobe` and decoded frames verified the final output.
+
+The named tests and commands, what was inspected manually, what was explicitly
+not trusted, detection symptoms, corrections, and remaining uncertainty are in
+[`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
+
 
 ## 5. Architecture
 
@@ -271,22 +294,3 @@ signs, zero offsets, and disable behavior; measure round-trip command latency
 and encoder noise; identify friction, effective inertia, backlash, mass/CoM,
 and safe software margins; then tune a low-torque hold. In parallel, implement
 the pinned CAN adapter and make the proposed `vcan`/MuJoCo gate executable.
-
-## 20. AI-agent workflow summary
-
-OpenAI Codex was used as the primary implementation agent with evidence-first
-increments: inspect sources, encode provenance, implement one bounded subsystem,
-run tests/experiments, inspect artifacts, and revise claims. No secondary agent
-was used. Three verbatim prompt excerpts and the complete verification ledger
-are in the workflow document. Two concrete examples of the review loop were:
-
-- `pytest` raised `desired_discontinuity` inside the supposed single-transient
-  test, revealing that its desired-state stimulus accidentally violated a
-  different rule; the stimulus was corrected while the rule stayed intact.
-- the 1280x720 render check failed with `Image width 1280 > framebuffer width
-  640`; inspecting `model.vis.global_` exposed the buffer mismatch, and the
-  corrected run plus `ffprobe` and decoded frames verified the final output.
-
-The named tests and commands, what was inspected manually, what was explicitly
-not trusted, detection symptoms, corrections, and remaining uncertainty are in
-[`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
