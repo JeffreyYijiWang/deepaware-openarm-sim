@@ -1,82 +1,158 @@
 # AI-agent workflow
 
-## Evidence-first sequence
+## Agent and tools used
 
-1. Create and maintain `AGENTS.md` before implementation so scope, prohibited
-   dependencies, physical-parameter labels, mapping rules, and major decisions
-   remain visible to later agents.
-2. Inspect the repository and official OpenArm sources before editing code.
-3. Record commit-pinned evidence and classify every important value in
-   `PARAMETER_PROVENANCE.md` and `config/openarm_limits.yaml`.
-4. Resolve model objects by exact name, store their distinct IDs/addresses once,
-   and fail startup on missing, duplicate, or incorrect transmissions.
-5. Make the smallest implementation increment, run it headlessly, and add
-   deterministic positive and negative tests.
-6. Tune only to resolve demonstrated instability or inadequate tracking. Record
-   measured results; do not optimize unexplained gains.
-7. Do not claim completion until lint, tests, the requested CLI, output existence,
-   and plot readability have been checked.
+The primary implementation agent was **OpenAI Codex in the Codex desktop app**.
+One primary agent performed the repository inspection, source research,
+implementation, command execution, and review. No secondary review agent was
+spawned, so this submission does not imply independent model review.
 
-## Decision and failure log
+The agent used repository file inspection, PowerShell, `git diff --check`,
+`apply_patch`, official web/GitHub evidence gathered during the read-only
+provenance phase, MuJoCo's Python API, pytest, Ruff, a C++17 compiler, FFmpeg,
+and manual image/video-frame inspection. It did not use ROS, reinforcement
+learning, or hardware access.
 
-- Investigation found that current OpenArm v2 MJCF actuators are position
-  servos although older prose describes torque control. The implementation
-  therefore converts only the seven selected compiled-model actuators in memory
-  to fixed gain-one, zero-bias torque actuators. It does not edit vendor XML and
-  does not bypass actuator limits through `qfrc_applied`.
-- The initial Microsoft Store Python virtual environment pointed to a moved
-  alias. Model and test commands were executed with the installed Python 3.11
-  executable and the already locked environment. A clean venv remains the
-  documented reproducible path.
-- The first test run exposed a Python local-import scoping bug in the optional
-  viewer path; it was fixed before baseline generation.
-- Stable tracking passed all completion limits with no saturation. A first
-  regression threshold demanded 80% peak-to-final error reduction, while the
-  measured result was 59% with final errors below 0.0044 rad. The threshold was
-  corrected to 50% rather than increasing gains to mask passive friction.
+## Decomposition strategy
 
-## Uncertainty discipline
+The project was intentionally split into evidence-gated increments:
 
-MuJoCo `qfrc_bias` includes gravity, Coriolis, and centrifugal terms. It does
-**not** include the forces created by joint `damping` or `frictionloss`. Because
-the selected model defines both, PD plus bias compensation should retain a small
-steady-state tracking error.
+1. inspect official OpenArm model, description, motor, and CAN sources;
+2. record classifications and unresolved conflicts before controller code;
+3. resolve seven joint/qpos/DoF/actuator channels by exact names and test them;
+4. implement the smallest PD-plus-bias baseline and measure it;
+5. add stateful safety with one negative test per rule;
+6. add exactly one controlled latency/noise perturbation and comparison;
+7. create a fail-closed hardware/CAN design without pretending it is a driver;
+8. package, rerun, and manually review the submission artifacts.
 
-Treat that friction-induced residual differently from these faults:
+Each increment preserved vendor files and kept configuration/provenance separate
+from controller code. Claims were added only after commands produced evidence.
 
-- incorrect gains generally produce slow response, excessive overshoot, or
-  oscillation across several samples;
-- incorrect `qfrc_bias` indexing produces configuration-dependent compensation
-  on the wrong joint;
-- incorrect actuator mapping or sign makes commanded force appear at the wrong
-  DoF or move away from the target;
-- friction-induced error is a bounded residual with otherwise stable response
-  and correct command/force mapping.
+## Representative prompts
 
-Do not raise gains aggressively just to eliminate the residual. A real system
-with approximate dynamics should use experimentally identified friction
-feedforward or a small anti-windup integral term after torque, saturation, and
-tracking-divergence safety behavior is validated.
+These are excerpts from the actual task prompts, not reconstructed success
+stories.
 
-Other unresolved uncertainties remain: real encoder and velocity noise,
-communication/actuation latency, zero and stop repeatability, temperature-
-dependent torque, link mass/COM accuracy, effective inertia, compliance,
-backlash, and the J7 passive-parameter source conflict. The identification
-procedures and precautions are in `PARAMETER_PROVENANCE.md`.
+**Prompt 1 — evidence first**
 
-## Commands executed for this increment
+> Perform a focused, read-only investigation of the official OpenArm
+> repositories and documentation. Do not edit project files yet.
+
+This forced the actuator semantics, joint limits, motor groups, CAN packing
+ranges, and missing measurements to be established before implementation.
+
+**Implementation prompt — safety**
+
+> Implement and verify a small explicit safety subsystem for the simulation.
+> The safety subsystem must distinguish planning limits, normal command limits,
+> and absolute fault limits.
+
+The agent decomposed this into immutable policies, a latched monitor, watchdogs,
+mapping drift checks, fault logging, and deterministic positive/negative tests.
+
+**Review prompt — do not game tests**
+
+> Do not weaken a test merely to make it pass. Fix implementation errors or
+> document a genuine model limitation.
+
+This instruction was applied directly when tests or rendering checks failed;
+thresholds were tied to engineering meaning rather than exact output snapshots.
+
+## Commands actually run
+
+Representative successful commands included:
 
 ```powershell
-python -m ruff check src tests
-python -m pytest -q
-python -m src.experiment --mode baseline --headless --output results/baseline
-python -m src.experiment --mode baseline --viewer --output <temporary-prefix>
-python -m src.experiment --mode compare --headless --output results
+py -3.11 -m venv .review-venv
+.\.review-venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.review-venv\Scripts\python.exe -m ruff check src tests
+.\.review-venv\Scripts\python.exe -m pytest -q
+.\.review-venv\Scripts\python.exe -m src.experiment --mode baseline --headless --output results/baseline
+.\.review-venv\Scripts\python.exe -m src.experiment --mode compare --headless --output results
+.\.review-venv\Scripts\python.exe -m src.record_demo --check-only --width 1280 --height 720
+.\.review-venv\Scripts\python.exe -m src.record_demo --output results/demo.mp4 --width 1280 --height 720 --fps 30
+g++ -std=c++17 -Wall -Wextra -Wpedantic -fsyntax-only hardware/can_control_loop.cpp
 ```
 
-Measured status: ruff passed, 57 tests passed, the baseline and controlled
-latency/noise scenario exited zero, all comparison artifacts were created, and
-both requested plots were visually inspected. The shortened stochastic
-regression writes no artifacts; the stale-command injection latches `FAULT`,
-stops active control, and records its reason and timestamp. The earlier
-six-second optional viewer run also completed and exited zero.
+The optional viewer was also run for the complete six-second baseline using a
+temporary output prefix. The repository's original ignored `.venv` became tied
+to a moved Microsoft Store launcher during development; final clone commands
+were therefore revalidated in the fresh `.review-venv` above instead of hiding
+that environment issue.
+
+## Verification used
+
+- 57 deterministic pytest cases covering named mapping, duplicate address/ID
+  rejection, trajectory endpoints, limit validation, clipping, torque slew,
+  finite values, hard limits, persistent divergence, watchdogs, fault latching,
+  mapping drift, baseline tracking, four-sample latency semantics, and the
+  shortened fixed-seed perturbation regression.
+- Ruff on all Python source and tests.
+- Two full 3,001-sample headless experiments and JSON/CSV artifact checks.
+- C++17 `-Wall -Wextra -Wpedantic -fsyntax-only` for the portable CAN skeleton;
+  Linux SocketCAN and hardware behavior remain explicitly unverified.
+- Manual inspection of baseline, latency, comparison plots and representative
+  demo-video frames.
+- `ffprobe` verification of demo codec, resolution, frame rate, duration, and
+  size.
+
+## Source validation and what was not trusted
+
+The agent followed the official repository index to commit-pinned
+`enactic/openarm_mujoco`, `openarm_description`, and `openarm_can` files plus
+official motor documentation. Values were cross-checked between MJCF,
+description, motor pages, compiled MuJoCo metadata, and measured outputs.
+
+The following were not trusted automatically:
+
+- prose suggesting torque control when the selected MJCF actuators compile as
+  position servos;
+- CAN protocol packing spans as physical safety limits;
+- agreement between two model files as experimental validation;
+- generated plots without visual review;
+- simulation success as hardware safety evidence;
+- C++ protocol placeholders as a hardware driver;
+- README metrics not traceable to generated JSON/CSV.
+
+## Real mistakes and corrections
+
+1. A first “single tracking transient” negative test changed desired position by
+   `0.6 rad` between adjacent samples. The independent discontinuity rule
+   correctly faulted, producing one failed test. The stimulus—not the safety
+   threshold—was corrected to a transient measured-state error, after which the
+   full suite passed.
+2. The demo script initially passed `1280x720` to `mujoco.Renderer`, but the
+   selected model's compiled offscreen buffer remained `640x480`; the render
+   check failed with “image width 1280 > framebuffer width 640.” The script now
+   reports the original buffer, raises `model.vis.global_.offwidth/offheight`
+   in memory to `1280x720`, constructs the explicit-size renderer, and verifies
+   the actual resolution. Vendor XML remains unchanged.
+3. The official MJCF actuator interface was an important uncertainty: the
+   selected upstream actuators were `<position>` actuators, not direct-torque
+   commands. Named compiled-model inspection and force/sign probes detected
+   this. The implementation performs a tested, in-memory gain-one/zero-bias
+   conversion on only the seven selected actuators rather than writing torque
+   into a position-reference channel.
+
+## Manual review
+
+Manually reviewed: source links and conflicts; model/joint/actuator selection;
+the actuator conversion and torque sign tests; safety fault semantics; all
+generated metric JSON; plot readability; five representative demo frames; the
+hardware design's fail-closed boundary; and final README links/claims.
+
+Not manually or automatically validated: a real arm, CAN electrical layer,
+wire frames against hardware, motor identities/zeros/signs, current-loop
+dynamics, temperature thresholds, physical E-stop/power isolation, stopping
+distance, collision fidelity, inertial accuracy, backlash, or compliance.
+
+## Confidence and remaining uncertainty
+
+Confidence is high that the checked-in Python experiment deterministically
+reproduces the reported MuJoCo results and detects the tested software faults.
+Confidence is moderate that the selected model/passive parameters represent a
+particular assembled OpenArm, because no experimental validation was found.
+Confidence in hardware readiness is intentionally low: the CAN artifact is a
+reviewable design skeleton, and physical commissioning requires measurement,
+independent protection validation, and formal risk assessment.

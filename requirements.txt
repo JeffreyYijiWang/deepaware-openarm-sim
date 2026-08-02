@@ -1,7 +1,9 @@
 openarm-mujoco==2.0.1
-matplotlib
-pandas
-PyYAML
-pytest
-ruff
-
+mujoco==3.11.0
+numpy==2.4.6
+pandas==3.0.5
+matplotlib==3.11.1
+Pillow==12.3.0
+PyYAML==6.0.3
+pytest==9.1.1
+ruff==0.16.1

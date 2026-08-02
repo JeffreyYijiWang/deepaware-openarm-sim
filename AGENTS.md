@@ -283,3 +283,45 @@ major decision.
 - Real encoder noise, velocity noise, and communication/actuation latency remain
   unmeasured. This scenario is a robustness test, not an OpenArm hardware-noise
   model.
+
+## Hardware bridge design increment (2026-08-01)
+
+- The hardware deliverable is a design and C++17 SocketCAN skeleton, not a
+  verified driver. No physical arm, CAN interface, frame capture, identity,
+  zero calibration, or E-stop was available.
+- Use a protocol-adapter boundary tied to pinned `enactic/openarm_can` evidence.
+  The skeleton refuses activation until message encoding, CAN IDs, identity,
+  units, signs, zero offsets, status, and disable behavior are verified.
+- Propose a 500 Hz host loop only as `ASSUMED`. Its 2 ms budget includes 750 us
+  reserve, but SocketCAN enqueue time is not wire completion; measured bus
+  utilization may require another rate or bus topology.
+- The host owns trajectory/outer control, system supervision, saturation,
+  timestamps, logging, and the fault machine. The MCU owns encoder sampling,
+  current/torque control, local watchdog, immediate execution, and motor current
+  and temperature protection.
+- Enforce `DISCONNECTED -> CONNECTED_DISABLED -> INITIALIZING ->
+  ZEROING_OR_CALIBRATION -> ENABLED_HOLD -> ACTIVE_CONTROL`; prohibit shortcuts,
+  auto-reenable from `FAULT`, and any powered transition from `ESTOP`.
+- Default uncertain/fault shutdown is stop trajectory then zero-torque/disable.
+  A validated hold is allowed only during healthy controlled shutdown. Because
+  zero torque can drop a gravity-loaded arm, physical support/brakes and the
+  final safe-state policy require formal risk assessment.
+- Every firmware/protocol change should pass a proposed Linux `vcan` test with
+  MuJoCo adapter, fixed trajectory, deterministic loss/stale injection, limit
+  checks, watchdog assertions, and fault-transition assertions. This CI proposal
+  cannot validate electrical, timing, current-loop, thermal, mechanical, or
+  physical E-stop behavior.
+
+## Submission packaging outcome (2026-08-01)
+
+- Reviewer setup, headless baseline, comparison, Ruff, all 57 tests, and the
+  optional six-second viewer path were rerun in a fresh `.review-venv` using
+  Python 3.11 and the pinned top-level dependencies.
+- `src/record_demo.py` reports the selected model's original `640x480`
+  offscreen buffer, expands it only in memory, and explicitly renders a checked
+  `1280x720` H.264 demo at 30 fps. Representative frames were manually
+  inspected after generation.
+- Generated metrics store the package-relative model identifier
+  `v2/openarm_bimanual.xml`, not a submitter-specific virtual-environment path.
+- The final README numbers are copied from the regenerated JSON/CSV artifacts;
+  the concise result index is `results/README.md`.

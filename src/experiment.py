@@ -571,7 +571,9 @@ def run_experiment(
         write_artifacts=write_artifacts,
         scenario_name=mode.replace("_", " + "),
     )
-    metrics["model_path"] = str(model_path)
+    # Keep checked-in metrics clone-independent while preserving the exact
+    # package-relative asset selected by the loader.
+    metrics["model_path"] = str(Path("v2") / model_path.name).replace("\\", "/")
     metrics["joint_names"] = list(mapping.joint_names)
     metrics["actuator_names"] = list(mapping.actuator_names)
     metrics["controller_kp"] = parameters.kp.tolist()

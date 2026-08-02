@@ -1,9 +1,23 @@
 .venv/
+.review-venv/
+.venv-reviewer/
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Viewer checks should use a temporary output prefix, not submission artifacts.
+/results/baseline_viewer*
 
 # Local upstream/reference clones must not enter the submission repository.
 /references/
@@ -11,4 +25,3 @@ __pycache__/
 /openarm_mujoco/
 /openarm_description/
 /openarm_can/
-
