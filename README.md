@@ -28,7 +28,10 @@ tests one controlled robustness question without implying hardware fidelity.
 ROS, IK, manipulation, grippers, and the right arm remain out of scope.
 
 ## 4. Demo
-[![Watch the demo](results/demo_thumbnail.png)](https://github.com/JeffreyYijiWang/deepaware-openarm-sim/raw/refs/heads/main/results/demo.mp4)
+
+
+https://github.com/user-attachments/assets/fadfa0df-fbe2-4a02-965e-4b3839097aac
+
 <video src="[https://github.com/<user>/<repo>/assets/<id>/<uuid>.mp4](https://github.com/JeffreyYijiWang/deepaware-openarm-sim/raw/refs/heads/main/results/demo.mp4)" controls width="720"></video>
 [Download the generated 1280x720 H.264 demo](results/demo.mp4), or inspect the
 [baseline-versus-latency plot](results/baseline_vs_latency.png). A hosted-video
