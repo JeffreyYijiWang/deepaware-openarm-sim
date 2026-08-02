@@ -6,7 +6,7 @@ This repository provides a deterministic, headless-first MuJoCo simulation of
 the OpenArm v2 left seven-DoF arm. A named joint/actuator mapping drives an
 in-memory torque interface with joint-space PD and MuJoCo bias-force
 compensation, explicit safety supervision, measured baseline and controlled
-8 ms latency/noise experiments, 63 deterministic tests, and a proposed (not
+8 ms latency/noise experiments, 67 deterministic tests, and a proposed (not
 hardware-verified) SocketCAN bridge. The baseline completed 3,001 samples with
 `0.00526052 rad` overall RMS error, zero command saturation, zero safety faults,
 and no non-finite samples.
@@ -25,7 +25,9 @@ Incorrect coordinates, actuator semantics, or limits can invalidate every
 downstream result. The work therefore establishes evidence and failure behavior
 before adding experiments. The latency/noise case is intentionally narrow: it
 tests one controlled robustness question without implying hardware fidelity.
-ROS, IK, manipulation, grippers, and the right arm remain out of scope.
+ROS, IK, manipulation, and the right arm remain out of scope. The validated
+controller experiment remains arm-only; section 20 is a separately labeled,
+scripted left-gripper visualization added by explicit follow-up request.
 
 ## 4. Demo
 
@@ -67,25 +69,6 @@ workflow document. Two concrete examples of the review loop were:
 The named tests and commands, what was inspected manually, what was explicitly
 not trusted, detection symptoms, corrections, and remaining uncertainty are in
 [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
-
-## 21. Extended left-arm motion showcase
-
-[Download the additional left-arm/claw video](results/left_arm_showcase.mp4).
-It raises the left arm to a forward-kinematics-verified horizontal reach, bends
-and rotates the arm and wrist, closes and opens the coupled claw through its
-full official MJCF range, then returns to the horizontal pose. Generate it with:
-
-```powershell
-.\.review-venv\Scripts\python.exe -m src.record_showcase --output results/left_arm_showcase.mp4 --width 1280 --height 720 --fps 30
-```
-
-This is deliberately a **scripted kinematic visualization**, isolated from the
-validated seven-joint controller experiment. It uses named model lookups and
-checks the arm planning margin, finger coupling/ranges, and horizontal geometry,
-but it is not presented as a dynamics, collision-safety, controller-tracking,
-or hardware test. The generated evidence is in
-[`results/left_arm_showcase_metrics.json`](results/left_arm_showcase_metrics.json),
-and model-level regression checks are in `tests/test_showcase.py`.
 
 AI validation was also used adversarially: a fresh environment reproduced the
 artifacts, source and compiled MuJoCo metadata were cross-checked, and temporary
@@ -291,7 +274,7 @@ triggered no safety limits, and remained stable. Machine-readable comparison:
 
 ## 15. Regression tests
 
-`63 passed` in the final Python 3.11 run. The suite includes valid/negative
+`67 passed` in the final Python 3.11 run. The suite includes valid/negative
 mapping, trajectory, every implemented safety rule, deterministic shortened
 tracking with broad engineering thresholds, explicit non-equal joint/qpos/DoF
 addressing, torque-clamp correspondence, controller sign/bias semantics, final
@@ -326,8 +309,10 @@ motor current loops, thermal response, mechanics, or a physical E-stop.
 ## 18. Known limitations
 
 - No physical OpenArm or CAN interface was present; latency/noise and the bridge
-- No large/full range rotations and extension of robot arms based on scope.
   remain controlled assumptions/design work.
+- The primary controller experiment uses only a small conservative trajectory.
+  The optional larger-motion/claw video is kinematic visualization, not tracked
+  dynamics or collision validation.
 - MuJoCo `qfrc_bias` excludes damping and `frictionloss`, leaving a documented
   steady-state residual.
 - Link inertials, passive terms, and collision geometry lack physical
@@ -348,3 +333,22 @@ signs, zero offsets, and disable behavior; measure round-trip command latency
 and encoder noise; identify friction, effective inertia, backlash, mass/CoM,
 and safe software margins; then tune a low-torque hold. In parallel, implement
 the pinned CAN adapter and make the proposed `vcan`/MuJoCo gate executable.
+
+## 20. Extended left-arm motion showcase
+
+[Download the additional left-arm/claw video](results/left_arm_showcase.mp4).
+It raises the left arm to a forward-kinematics-verified horizontal reach, bends
+and rotates the arm and wrist, closes and opens the coupled claw through its
+full official MJCF range, then returns to the horizontal pose. Generate it with:
+
+```powershell
+.\.review-venv\Scripts\python.exe -m src.record_showcase --output results/left_arm_showcase.mp4 --width 1280 --height 720 --fps 30
+```
+
+This is deliberately a **scripted kinematic visualization**, isolated from the
+validated seven-joint controller experiment. It uses named model lookups and
+checks the arm planning margin, finger coupling/ranges, and horizontal geometry,
+but it is not presented as a dynamics, collision-safety, controller-tracking,
+or hardware test. The generated evidence is in
+[`results/left_arm_showcase_metrics.json`](results/left_arm_showcase_metrics.json),
+and model-level regression checks are in `tests/test_showcase.py`.

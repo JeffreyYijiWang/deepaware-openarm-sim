@@ -39,3 +39,6 @@ Primary artifacts:
   `latency_noise_tracking.png`, `latency_noise_torque.png`
 - `comparison_metrics.json`, `baseline_vs_latency.png`
 - `demo.mp4` — 14.03 s, H.264, 1280x720, 30 fps
+- `left_arm_showcase.mp4`, `left_arm_showcase_metrics.json` — optional 15.60 s
+  scripted left-arm horizontal/bend/rotation and full-MJCF-range claw cycle;
+  explicitly not a controller-validation run

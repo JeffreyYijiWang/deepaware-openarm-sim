@@ -233,7 +233,7 @@ major decision.
   consistent with model damping/friction omitted from `qfrc_bias`.
 - Regression acceptance uses greater than 50% peak-to-final error-norm reduction
   (measured 59%) rather than driving gains upward to chase friction residual.
-- Ruff passes and 63 deterministic tests pass, including negative tests for all
+- Ruff passes and 67 deterministic tests pass, including negative tests for all
   implemented safety faults and a nonzero CLI exit on safety fault.
 - Both the headless baseline and a bounded six-second `--viewer` run exit zero.
 
@@ -314,7 +314,7 @@ major decision.
 
 ## Submission packaging outcome (2026-08-01)
 
-- Reviewer setup, headless baseline, comparison, Ruff, all 63 tests, and the
+- Reviewer setup, headless baseline, comparison, Ruff, all 67 tests, and the
   optional six-second viewer path were rerun in a fresh `.review-venv` using
   Python 3.11 and the pinned top-level dependencies.
 - `src/record_demo.py` reports the selected model's original `640x480`
@@ -325,3 +325,18 @@ major decision.
   `v2/openarm_bimanual.xml`, not a submitter-specific virtual-environment path.
 - The final README numbers are copied from the regenerated JSON/CSV artifacts;
   the concise result index is `results/README.md`.
+
+## Optional motion-showcase increment (2026-08-01)
+
+- A later explicit user request expands visualization scope to the left gripper.
+  Keep it isolated in `src/record_showcase.py`; do not broaden the validated
+  seven-joint controller, baseline metrics, or hardware claims.
+- Resolve `openarm_left_finger_joint1`, `openarm_left_finger_joint2`, and
+  `left_finger1_ctrl` by name. Verify the official 1:1 equality coupling and
+  sourced `[0, 0.7854] rad` MJCF joint/actuator range.
+- The showcase poses are `ASSUMED`, kinematically interpolated keyframes. Arm
+  endpoints remain inside the existing 5-degree planning margin. The horizontal
+  label requires an FK check against `left_ee_control_point` and the left base.
+- Never present this optional video as dynamics, controller tracking, collision
+  safety, or hardware validation. Its purpose is reviewer-visible articulation
+  and gripper-range coverage only.

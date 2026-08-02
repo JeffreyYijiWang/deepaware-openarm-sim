@@ -5,7 +5,7 @@ Scope: repository state in the local `main` worktree, OpenArm v2 MuJoCo simulati
 
 ## 1. Executive verdict
 
-The minimum **simulation** acceptance criteria passed after narrowly scoped corrections: a clean Python 3.11 environment installed the declared dependencies, 63 tests passed, both requested headless experiments completed, expected artifacts were regenerated, and the intentional torque-limit, controller-sign, and duplicate-actuator mutations each caused a relevant failure before being restored.
+The minimum **simulation** acceptance criteria passed after narrowly scoped corrections: a clean Python 3.11 environment installed the declared dependencies, 67 tests passed, both requested headless experiments completed, expected artifacts were regenerated, and the intentional torque-limit, controller-sign, and duplicate-actuator mutations each caused a relevant failure before being restored. The final count includes four later model-level tests for the explicitly requested optional left-arm/gripper showcase.
 
 This is acceptable evidence for a simulation take-home. It is **not evidence of hardware readiness, certified safety, or general closed-loop stability**. No physical OpenArm, CAN interface, real-time scheduler, independent E-stop, or power-isolation path was tested. The latency/noise result is one deterministic synthetic case, and its `remained_stable` field is a threshold classification rather than a stability proof.
 
@@ -44,8 +44,8 @@ Environment observations:
 | Check | Result |
 | --- | --- |
 | Original test suite before audit corrections | `57 passed in 30.49 s` |
-| Final full suite | `63 passed in 10.70 s` |
-| Final Ruff lint and format checks | Passed; 15 files already formatted |
+| Final full suite | `67 passed in 21.06 s` (latest post-showcase run) |
+| Final Ruff lint and format checks | Passed; 17 files already formatted |
 | Baseline experiment | Completed, 3,001 samples from `0.0` through `6.0 s`, zero faults |
 | Latency/noise experiment | Completed, 3,001 samples, zero faults |
 | Baseline overall RMS error | `0.005260518892045125 rad` |
@@ -56,6 +56,7 @@ Environment observations:
 | Perturbed torque-rate intervention | 55 samples, `1.832722%`; normal torque clipping remained zero |
 | C++ hardware skeleton | C++17 syntax and warning check passed |
 | Demo file | H.264, 1280x720, 30 fps, 14.03 s, 421 frames |
+| Optional showcase video | H.264, 1280x720, 30 fps, 15.60 s; visually inspected |
 
 The initial audit outputs written under `C:\tmp` matched the committed baseline CSV/JSON content byte-for-byte. Final runs regenerated these expected files:
 
@@ -82,7 +83,8 @@ No uncorrected critical defect was found in the scoped simulation path. That sta
 - Added a non-equal joint/qpos/DoF address fixture and negative clamp-mismatch/disabled-clamp tests.
 - Added direct controller tests for position-error sign, velocity-error sign, units-compatible arithmetic, and adding bias exactly once.
 - Added metric tests proving final error uses the final hold sample rather than the move endpoint and that hold metrics cover the intended interval.
-- Updated README and workflow test counts from 57 to 63.
+- The audit updated README and workflow test counts from 57 to 63; the later
+  optional showcase added four model-level tests, producing the current 67.
 - Added the README deliverables list, adversarial AI-validation description, human-review procedure, trust-store install fallback, and more precise limitations.
 - Removed or narrowed claims that could be mistaken for authenticated prompt history, completed human sign-off, general stability, or hardware validation.
 

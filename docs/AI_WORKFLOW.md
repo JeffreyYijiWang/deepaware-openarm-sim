@@ -87,12 +87,15 @@ that environment issue.
 
 ## Verification used
 
-- 63 deterministic pytest cases covering named mapping, duplicate address/ID
+- 67 deterministic pytest cases covering named mapping, duplicate address/ID
   rejection, trajectory endpoints, limit validation, clipping, torque slew,
   finite values, hard limits, persistent divergence, watchdogs, fault latching,
   mapping drift, non-equal joint/qpos/DoF indexing, actuator/joint force clamps,
   controller signs, final hold indexing, baseline tracking, four-sample latency
-  semantics, and the shortened fixed-seed perturbation regression.
+  semantics, and the shortened fixed-seed perturbation regression. Four of these
+  model-level tests validate the optional showcase's named finger mapping, 1:1
+  coupling, model range, arm planning margin, wrist/elbow span, and
+  forward-kinematics horizontal claim.
 - Ruff on all Python source and tests.
 - Two full 3,001-sample headless experiments and JSON/CSV artifact checks.
 - C++17 `-Wall -Wextra -Wpedantic -fsyntax-only` for the portable CAN skeleton;
@@ -205,7 +208,9 @@ repository does not independently prove that the author completed that step.
 The final AI reviewer independently inspected source links and conflicts;
 model/joint/actuator selection; actuator conversion and sign tests; safety fault
 semantics; generated metrics; plot readability; six representative demo frames;
-the hardware design boundary; and final README claims.
+the hardware design boundary; and final README claims. Six additional decoded
+showcase frames were checked for initial, horizontal, claw-open, bent/rotated,
+claw-closed, and wrist-rotated states.
 
 Still unvalidated by this project: a real arm, CAN electrical layer, wire
 frames against hardware, motor identities/zeros/signs, current-loop
