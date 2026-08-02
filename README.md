@@ -40,7 +40,7 @@ The recorder first reports the MJCF offscreen buffer (`640x480` in the selected
 model), expands it in memory, and passes an explicit `1280x720` size to
 `mujoco.Renderer`; it does not edit the vendor model.
 
- AI-agent workflow summary
+# AI-agent workflow summary
 
 OpenAI Codex was used as the primary implementation agent with evidence-first
 increments: inspect sources, encode provenance, implement one bounded subsystem,
